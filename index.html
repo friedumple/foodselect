@@ -49,6 +49,19 @@
     .location-line .dot { background:#e6a455; width:9px; height:9px; border-radius:50%; flex:none; }
     .location-line .dot.ready { background:#45a16b; }
     #locationMeta { color:#6b8071; margin-top:6px; font-size:11px; overflow-wrap:anywhere; }
+    .address-title { font-size:11px; font-weight:850; color:#5c7462; margin-top:10px; }
+    .location-address { font-size:12px; line-height:1.6; color:#345a43; font-weight:750; margin:3px 0 0; overflow-wrap:anywhere; }
+    .location-address.is-muted { color:#788c7c; font-weight:500; }
+    .location-map { display:inline-block; font-size:11px; font-weight:850; color:#b75d3b; margin-top:6px; }
+    .gps-help { font-size:11px; line-height:1.65; color:#7c897d; margin-top:9px; }
+    .address-search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; margin-top:8px; }
+    .address-search input { width:100%; min-width:0; padding:9px 10px; background:#fff; color:var(--ink); border:1px solid #e0e4da; border-radius:9px; font-size:12px; }
+    .lookup-results { margin:8px 0 10px; display:grid; gap:6px; }
+    .lookup-choice { text-align:left; white-space:normal; line-height:1.5; border:1px solid #dce4d7; background:white; border-radius:9px; padding:9px; font-size:11px; color:#385344; cursor:pointer; }
+    .lookup-choice:hover { background:#ecf6e9; }
+    .address-info { color:#8b958b; font-size:10px; line-height:1.5; margin-top:3px; }
+    .addr-btn { border:0; background:transparent; padding:0; color:#c36c47; font-size:11px; font-weight:800; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+    .addr-btn:disabled { color:#999; text-decoration:none; }
     .btn { border:0; border-radius:13px; display:inline-flex; align-items:center; justify-content:center; gap:9px; font-weight:900; transition:transform .15s, background .15s,box-shadow .15s; }
     .btn:hover:not(:disabled) { transform:translateY(-1px); }
     .btn-primary { background:var(--orange); color:white; box-shadow:0 6px 16px #e8694433; }
@@ -129,7 +142,7 @@
     .tag.open { color:#288758; background:#e5f5e8; }
     .tag.closed { color:#ac7364; background:#fff0eb; }
     .tag.unknown { color:#8a806e; background:#f4f1e8; }
-    .place-address { color:#8a978d; font-size:11px; margin-top:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .place-address { color:#63756b; font-size:11px; margin-top:9px; overflow-wrap:anywhere; line-height:1.65; }
     .place-actions { margin-top:13px; border-top:1px solid #f1f0ea; padding-top:11px; display:flex; justify-content:space-between; align-items:center; gap:7px; }
     .place-actions a { text-decoration:none; color:#d56743; font-weight:900; font-size:12px; white-space:nowrap; }
     .place-actions a:hover { text-decoration:underline; }
@@ -175,12 +188,19 @@
         <div class="loc-box" aria-live="polite">
           <div class="location-line"><span id="statusDot" class="dot" aria-hidden="true"></span><span id="locationStatus">尚未取得位置</span></div>
           <div id="locationMeta">點擊下方按鈕，允許 GPS 定位</div>
+          <div class="address-title">附近地址／所在區域</div>
+          <div id="locationAddress" class="location-address is-muted">尚未定位</div>
+          <a id="locationMap" class="location-map" target="_blank" rel="noopener noreferrer" hidden>🗺 查看搜尋中心位置 ↗</a>
         </div>
         <button class="btn btn-green btn-full" id="locateBtn" type="button">◎ 使用我的 GPS 位置</button>
+        <div id="gpsHelp" class="gps-help">請以 GitHub Pages 的 HTTPS 網址開啟，並允許瀏覽器與手機系統使用定位。室內或電腦定位可能不準。</div>
         <details class="manual" id="manualDetails">
           <summary>定位失敗？改用指定位置 ▾</summary>
           <div class="manual-body">
-            <div class="tiny">選擇台灣示範搜尋中心（仍會查真實店家）：</div>
+            <div class="tiny">輸入地標或地址（按下搜尋才查詢，不會自動連續請求）：</div>
+            <div class="address-search"><input id="addressInput" type="search" placeholder="例如：台北車站、中正區公園路" aria-label="地址或地標" maxlength="120"><button type="button" class="mini-button" id="addressSearchBtn">找位置</button></div>
+            <div id="addressResults" class="lookup-results" aria-live="polite"></div>
+            <div class="tiny">或選擇台灣常用搜尋中心：</div>
             <div class="preset-wrap">
               <button type="button" class="preset" data-preset="25.0478,121.5170,台北車站">台北車站</button>
               <button type="button" class="preset" data-preset="24.1369,120.6850,台中車站">台中車站</button>
@@ -260,7 +280,7 @@
           <div class="place-list" id="placeList" aria-live="polite"></div>
           <div class="empty" id="emptyState"><span class="emoji">🧭</span><h3>美食探索，從定位開始！</h3><p>使用 GPS 或設定搜尋中心，就能看到真實的附近餐廳；不用定位也可以先轉動上方的示範轉盤。</p></div>
           <button type="button" class="load-more" id="loadMoreBtn">載入更多店家 ↓</button>
-          <p class="privacy-note">🗺 資料：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap 貢獻者</a>；透過社群 Overpass API 查詢。距離為直線距離，店家分類可能不完整；營業狀態依公開時間推算，僅供參考。定位座標只在本頁使用並傳給查詢服務，不會儲存在本網站的伺服器。</p>
+          <p class="privacy-note">🗺 店家資料：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap 貢獻者</a>，透過 Overpass API 搜尋；地址／地標反查使用 <a href="https://photon.komoot.io" target="_blank" rel="noopener noreferrer">Photon (komoot)</a> 公開服務。店家未提供地址時，可按「查附近地址」取得<span style="font-weight:800">附近位置推估（不等於店家登記門牌）</span>。GPS 座標會傳送給上述查詢服務，不會由本站儲存。距離為直線距離，營業狀態依公開時間推算，僅供參考。公開服務可能限流或暫時無法連線。</p>
         </section>
       </div>
     </div>
@@ -275,7 +295,7 @@
     const EXAMPLE_FOODS = ['🍚 便當','🍜 拉麵','🍲 火鍋','🍣 壽司','🍔 漢堡','🥟 小吃','🍝 義大利麵','🥪 早午餐'];
     const COLORS = ['#facf7d','#f7a86d','#f6d99c','#e3b98a','#f2bf69','#ed9d77','#f8d98d','#dba47a'];
     const categoryEmoji = { 中式台式:'🍚',麵食:'🍜',火鍋:'🍲',日式:'🍣',韓式:'🥘',義式:'🍝',速食:'🍔',小吃:'🥟',早午餐:'🥪',甜點飲料:'☕',其他:'🍽' };
-    const state = { origin:null, radius:1000, cat:'全部', all:[], filtered:[], selections:new Set(), fetched:false, fetchedRadius:0, fetchedOrigin:null, sort:'near', visible:12, busy:false, spinning:false, wheelItems:[], rotation:0, lastQueryKey:'', lastQueryAt:0, reqId:0 };
+    const state = { origin:null, radius:1000, cat:'全部', all:[], filtered:[], selections:new Set(), fetched:false, fetchedRadius:0, fetchedOrigin:null, sort:'near', visible:12, busy:false, gpsPending:false, spinning:false, wheelItems:[], rotation:0, lastQueryKey:'', lastQueryAt:0, reqId:0, originToken:0, addressLookupBusy:false, photonLastAt:0, reverseCache:new Map(), locationChoices:[] };
     const ROTOR = $('wheelRotor');
     let requestAbort = null;
     let toastTimeout = null;
@@ -288,6 +308,71 @@
     function toast(message) { const el=$('toast'); el.textContent=message; el.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove('show'),3600); }
     function setSearchMessage(message, isBusy=false) { $('searchStatus').innerHTML = `${isBusy?'<span class="spin-icon" style="border-color:#c28456;border-right-color:transparent"></span> ':''}${escapeHtml(message)}`; }
     function setLoading(loading) { state.busy=loading; $('searchBtn').disabled=loading; $('locateBtn').disabled=loading; $('manualBtn').disabled=loading; $('searchBtn').innerHTML=loading?'<span class="spin-icon"></span> 正在尋找美食…':'✨ 搜尋附近餐廳'; }
+    // Photon 由 komoot 公開提供，僅供少量、由使用者觸發的查詢；不批量反查每一家店。
+    // 不依賴 API Key。若之後要大量公開使用，應改用自行架設或具 SLA 的地理編碼服務。
+    async function photonGet(path, params) {
+      // 連續化同頁地址請求，避免位置反查與手動搜尋同時對社群伺服器送出請求。
+      if(!state.photonQueue)state.photonQueue=Promise.resolve();
+      const job=state.photonQueue.then(async()=>{
+        const wait=Math.max(0,1300-(Date.now()-state.photonLastAt));
+        if(wait)await new Promise(resolve=>setTimeout(resolve,wait));
+        state.photonLastAt=Date.now();
+        const url=new URL('https://photon.komoot.io/'+path);
+        for(const [key,value] of Object.entries(params))url.searchParams.set(key,String(value));
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),14000);
+        try {
+          const res=await fetch(url,{signal:controller.signal});
+          if(!res.ok)throw new Error('地址服務 HTTP '+res.status);
+          const data=await res.json();
+          if(!Array.isArray(data?.features))throw new Error('地址資料格式錯誤');
+          return data.features;
+        } finally {clearTimeout(timer);}
+      });
+      state.photonQueue=job.catch(()=>{});
+      return job;
+    }
+    function photonDescription(feature) {
+      const props=feature?.properties||{};
+      const area=[props.state,props.city,props.district,props.county,props.locality].filter(Boolean);
+      const dedup=[];
+      for(const item of area)if(!dedup.some(old=>old===item || old.includes(item) || item.includes(old)))dedup.push(item);
+      const road=props.street||((props.osm_key==='highway'||props.osm_value==='street')?props.name:'');
+      const house=props.housenumber?(String(props.housenumber).match(/[號号]|號之/) ? props.housenumber : `${props.housenumber}號`):'';
+      const location=[...dedup,road,house].filter(Boolean).join('');
+      return location || props.name || props.country || '';
+    }
+    function mapPointUrl(point) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(point.lat+','+point.lon)}`;
+    }
+    async function lookupOriginAddress(origin,token) {
+      const box=$('locationAddress');
+      box.classList.add('is-muted');
+      box.textContent='正在查附近地址…（不會影響餐廳搜尋）';
+      try {
+        const key=`${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}`;
+        let address=state.reverseCache.get(key);
+        if(!address) {
+          const features=await photonGet('reverse',{lat:origin.lat,lon:origin.lon,limit:1,lang:'zh'});
+          address=photonDescription(features[0])||'';
+          if(address)state.reverseCache.set(key,address);
+        }
+        if(token!==state.originToken)return;
+        box.textContent=address?`約在 ${address} 附近（推估）`:'無法取得文字地址，但仍可用座標搜尋餐廳與導航。';
+        box.classList.toggle('is-muted',!address);
+      } catch(err) {
+        if(token===state.originToken)box.textContent='附近地址反查暫時無法連線；GPS 座標及餐廳搜尋仍可使用。';
+      }
+    }
+    function gpsMessage(err) {
+      if(err?.code===1)return '定位權限遭拒絕：請到瀏覽器「網站設定」開啟位置權限，也確認手機定位服務已開啟。';
+      if(err?.code===2)return '無法取得裝置位置：請打開手機定位服務，移到戶外或有網路的地方重試。';
+      if(err?.code===3)return '取得位置逾時：可重新點選 GPS，或用下方的地址、地標搜尋。';
+      return `GPS 無法使用${err?.message?'（'+err.message+'）':''}，請改用指定位置。`;
+    }
+    function positionRequest(options) {
+      return new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,options));
+    }
     function resetSearch() {
       state.all=[];state.filtered=[];state.selections.clear();state.fetched=false;state.fetchedRadius=0;state.visible=12;state.lastQueryKey='';
       state.wheelItems=[];
@@ -298,26 +383,52 @@
       if(state.spinning) { toast('請等轉盤停止後再切換位置。'); return false; }
       if(requestAbort) requestAbort.abort(); state.reqId++; setLoading(false);
       state.origin={lat,lon,label};
+      const token=++state.originToken;
       $('locationStatus').textContent=label;
-      $('locationMeta').textContent=`${formatCoords(state.origin)}${accuracy==null?'':` · 誤差約 ${Math.round(accuracy)} 公尺`}`;
+      $('locationMeta').textContent=`${formatCoords(state.origin)}${accuracy==null?'':` · 定位誤差約 ${Math.round(accuracy)} 公尺`}`;
       $('statusDot').classList.add('ready');
+      $('locationMap').hidden=false;
+      $('locationMap').href=mapPointUrl(state.origin);
       $('latInput').value=lat.toFixed(6); $('lngInput').value=lon.toFixed(6);
-      resetSearch(); setSearchMessage('已設定搜尋位置，準備查找附近店家。');
+      resetSearch(); setSearchMessage(accuracy!=null&&accuracy>800?'已定位，但精度較低。結果距離可能有誤差，建議重新定位或改用地址搜尋。':'已取得搜尋位置，即將查找附近店家。');
+      // 地址反查和餐廳搜尋各自獨立，避免反查服務故障導致 GPS 搜尋也無法使用。
+      void lookupOriginAddress({...state.origin},token);
       return true;
     }
     async function useGPS() {
-      if(!navigator.geolocation) { toast('此瀏覽器不支援定位。請展開「改用指定位置」。');$('manualDetails').open=true;return; }
-      if(!window.isSecureContext) { toast('GPS 需要 HTTPS 或 localhost。請用 GitHub Pages 開啟網頁。');$('manualDetails').open=true;return; }
-      $('locateBtn').disabled=true; $('locateBtn').textContent='◌ 正在取得 GPS 位置…';
-      setSearchMessage('正在等待瀏覽器 GPS 授權…');
+      if(state.gpsPending)return;
+      if(!navigator.geolocation) {
+        const msg='此瀏覽器不支援 GPS 定位。請使用 Safari／Chrome，或改用地址搜尋。';
+        setSearchMessage(msg);toast(msg);$('manualDetails').open=true;return;
+      }
+      if(!window.isSecureContext) {
+        const msg='GPS 須在 HTTPS 安全網站（例如 GitHub Pages）上執行；不要用 http:// 或不支援定位的預覽框。';
+        setSearchMessage(msg);toast(msg);$('manualDetails').open=true;return;
+      }
+      state.gpsPending=true;
+      $('locateBtn').disabled=true;
+      $('locateBtn').textContent='◌ 正在取得手機位置…';
+      setSearchMessage('正在等待定位授權與 GPS 訊號…（可能需要數秒）',true);
       try {
-        const pos=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:17000,maximumAge:30000}));
-        if(setOrigin(pos.coords.latitude,pos.coords.longitude,'GPS 目前位置',pos.coords.accuracy)) await searchNearby();
+        let pos;
+        try {
+          pos=await positionRequest({enableHighAccuracy:true,timeout:13000,maximumAge:0});
+        } catch(err) {
+          if(err?.code===1)throw err; // 使用者拒絕，不再重複打擾
+          setSearchMessage('高精度 GPS 尚未取得位置，改用 Wi-Fi／網路定位再試一次…',true);
+          pos=await positionRequest({enableHighAccuracy:false,timeout:16000,maximumAge:120000});
+        }
+        if(setOrigin(pos.coords.latitude,pos.coords.longitude,'GPS 目前位置',pos.coords.accuracy)) {
+          await searchNearby();
+        }
       } catch(err) {
-        const messages={1:'定位權限遭拒絕，請允許網站使用位置，或改用指定位置。',2:'裝置暫時無法取得位置，請開啟手機定位或改用指定位置。',3:'定位逾時，請再試一次，或改用指定位置。'};
-        const message=messages[err.code]||'無法取得 GPS 位置，請改用指定位置。';
-        toast(message); setSearchMessage(message); $('manualDetails').open=true;
-      } finally { $('locateBtn').textContent='◎ 重新取得 GPS 位置'; $('locateBtn').disabled=state.busy; }
+        const message=gpsMessage(err);
+        toast(message);setSearchMessage(message);$('manualDetails').open=true;
+      } finally {
+        state.gpsPending=false;
+        $('locateBtn').textContent='◎ 重新取得 GPS 位置';
+        $('locateBtn').disabled=state.busy;
+      }
     }
     // 只支援明確、常見的 OSM opening_hours 格式；遇到節假日/複雜條件 => 未知，而不是猜測。
     const WD=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -373,7 +484,14 @@
       if(tags.cuisine==='chinese'||tags.cuisine==='taiwanese')found.add('中式台式');
       return found.size?[...found]:['其他'];
     }
-    function makeAddress(tags) {const fields=[tags['addr:city'],tags['addr:district'],tags['addr:street'],tags['addr:housenumber']].filter(Boolean);return fields.join('')||tags['addr:full']||'地址資料未提供（可點選導航）';}
+    function makeAddress(tags) {
+      if(tags['addr:full'])return tags['addr:full'];
+      const parts=[tags['addr:province']||tags['addr:state'],tags['addr:city'],tags['addr:district']||tags['addr:subdistrict'],tags['addr:street']||tags['addr:place'],tags['addr:housenumber']].filter(Boolean);
+      if(!parts.length)return '';
+      // 移除行政區重複資料（例如 city 與 state 相同）。
+      const result=[];for(const value of parts)if(!result.includes(value))result.push(value);
+      return result.join('');
+    }
     function normalizeData(elements,origin,radius) {
       const seen=[];
       for(const e of elements) {
@@ -382,7 +500,8 @@
         const distance=haversine(origin.lat,origin.lon,lat,lon);
         if(distance>radius+60) continue;
         if(seen.some(p=>p.name===t.name&&haversine(p.lat,p.lon,lat,lon)<22)) continue;
-        seen.push({id:`${e.type}-${e.id}`,name:t.name,lat,lon,distance,cats:getCategories(t),status:openState(t.opening_hours),hours:t.opening_hours||'',address:makeAddress(t)});
+        const realAddress=makeAddress(t);
+        seen.push({id:`${e.type}-${e.id}`,name:t.name,lat,lon,distance,cats:getCategories(t),status:openState(t.opening_hours),hours:t.opening_hours||'',address:realAddress||'尚無店家門牌資料',addressSource:realAddress?'osm':'none',addressBusy:false});
       }
       return seen.sort((a,b)=>a.distance-b.distance).slice(0,1500);
     }
@@ -392,17 +511,22 @@
     async function getOverpassPlaces(origin,radius,signal) {
       const query=overpassQuery(origin.lat,origin.lon,radius);
       // 公共服務可能繁忙，僅在失敗時切換一次備援；不會持續重試。
-      const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+      const endpoints=['https://overpass.private.coffee/api/interpreter','https://overpass-api.de/api/interpreter'];
       let lastError;
       for(const url of endpoints) {
         if(signal.aborted) throw new DOMException('已取消','AbortError');
+        const controller=new AbortController();
+        const cancel=()=>controller.abort();
+        signal.addEventListener('abort',cancel,{once:true});
+        const timer=setTimeout(()=>controller.abort(),19500); // 單一站台卡住時，自動改用另一站台
         try {
-          const resp=await fetch(url,{method:'POST',body:new URLSearchParams({data:query}),signal});
+          const resp=await fetch(url,{method:'POST',body:new URLSearchParams({data:query}),signal:controller.signal});
           if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const data=await resp.json();
           if(!data || !Array.isArray(data.elements)) throw new Error('回傳格式錯誤');
           return data.elements;
         } catch(err) {if(signal.aborted)throw err;lastError=err;}
+        finally {clearTimeout(timer);signal.removeEventListener('abort',cancel);}
       }
       throw lastError||new Error('查詢失敗');
     }
@@ -426,8 +550,8 @@
         if(!state.all.length) toast('這個範圍內沒有取得店家，試試調大距離。');
       } catch(err) {
         if(myId!==state.reqId)return;
-        if(err.name==='AbortError')setSearchMessage('查詢逾時或已取消，請稍後再試或縮小距離。');
-        else setSearchMessage('公開餐廳資料服務暫時無法連線，請稍後重試。');
+        if(err.name==='AbortError')setSearchMessage('餐廳資料查詢逾時或已取消，請稍後再試或縮小距離（GPS 位置仍已取得）。');
+        else setSearchMessage(`GPS 位置已取得，但餐廳資料服務連線失敗（${err?.message||'無詳細資訊'}）。請稍後重試或縮小距離。`);
         toast('無法讀取附近店家；仍可使用上方的料理示範轉盤。');
         if(!state.fetched) {state.all=[];renderResults();updateWheel();}
       } finally {clearTimeout(timer);if(myId===state.reqId)setLoading(false);}
@@ -464,7 +588,9 @@
         const statusMap={open:'營業中（推算）',closed:'目前未營業（推算）',unknown:'營業時間未知'};
         const cat=p.cats.join(' · ');
         const selected=state.selections.has(p.id);
-        article.innerHTML=`<div class="place-head"><div class="food-icon" aria-hidden="true">${categoryEmoji[p.cats[0]]||'🍽'}</div><div style="min-width:0"><h3>${escapeHtml(p.name)}</h3><p class="place-type">${escapeHtml(cat)}</p></div></div><div class="place-line"><span class="tag">📍 ${formatDist(p.distance)}</span><span class="tag ${p.status}" title="${escapeHtml(p.hours||'無營業時間資料')}">${statusMap[p.status]}</span></div><p class="place-address" title="${escapeHtml(p.address)}">${escapeHtml(p.address)}</p><div class="place-actions"><a href="${safeMapUrl(p)}" target="_blank" rel="noopener noreferrer" aria-label="導航至 ${escapeHtml(p.name)}">🗺 開啟導航 ↗</a><button type="button" class="pick-btn ${selected?'selected':''}" data-pick="${escapeHtml(p.id)}" aria-pressed="${selected}">${selected?'✓ 已加入轉盤':'+ 加入轉盤'}</button></div>`;
+        const addressNote=p.addressSource==='osm'?'店家在 OpenStreetMap 登記的地址':p.addressSource==='approx'?'附近地址（推估，不是店家確定門牌）':'此店在 OpenStreetMap 尚無門牌資料';
+        const addressLookup=p.addressSource==='none'?`<button type="button" class="addr-btn" data-addr="${escapeHtml(p.id)}" ${p.addressBusy?'disabled':''}>${p.addressBusy?'正在查詢附近地址…':'查附近地址 ↗'}</button>`:'';
+        article.innerHTML=`<div class="place-head"><div class="food-icon" aria-hidden="true">${categoryEmoji[p.cats[0]]||'🍽'}</div><div style="min-width:0"><h3>${escapeHtml(p.name)}</h3><p class="place-type">${escapeHtml(cat)}</p></div></div><div class="place-line"><span class="tag">📍 ${formatDist(p.distance)}</span><span class="tag ${p.status}" title="${escapeHtml(p.hours||'無營業時間資料')}">${statusMap[p.status]}</span></div><p class="place-address">📮 ${escapeHtml(p.address)}</p><div class="address-info">${escapeHtml(addressNote)} ${addressLookup}</div><div class="place-actions"><a href="${safeMapUrl(p)}" target="_blank" rel="noopener noreferrer" aria-label="導航至 ${escapeHtml(p.name)}">🗺 開啟導航 ↗</a><button type="button" class="pick-btn ${selected?'selected':''}" data-pick="${escapeHtml(p.id)}" aria-pressed="${selected}">${selected?'✓ 已加入轉盤':'+ 加入轉盤'}</button></div>`;
         frag.appendChild(article);
       }
       list.appendChild(frag);
@@ -527,7 +653,7 @@
       if(chosen.example) {
         $('wheelResult').innerHTML=`<div class="result-top">✨ 示範抽選結果（非真實店家）</div><div class="result-name">${escapeHtml(chosen.name)}</div><div class="result-bottom">按下 GPS 定位，才能搜尋實際附近的餐廳。</div>`;
       } else {
-        $('wheelResult').innerHTML=`<div class="result-top">🎉 今天就吃這家！</div><div class="result-name">${escapeHtml(chosen.name)}</div><div class="result-bottom">${escapeHtml(chosen.cats.join(' · '))} · 距離約 ${formatDist(chosen.distance)} · ${chosen.status==='open'?'營業中（推算）':chosen.status==='closed'?'目前未營業（推算）':'營業時間未知'}</div><a href="${safeMapUrl(chosen)}" target="_blank" rel="noopener noreferrer">📍 開啟 Google 地圖導航 ↗</a>`;
+        $('wheelResult').innerHTML=`<div class="result-top">🎉 今天就吃這家！</div><div class="result-name">${escapeHtml(chosen.name)}</div><div class="result-bottom">${escapeHtml(chosen.cats.join(' · '))} · 距離約 ${formatDist(chosen.distance)} · ${chosen.status==='open'?'營業中（推算）':chosen.status==='closed'?'目前未營業（推算）':'營業時間未知'}</div><div class="result-bottom">📮 ${escapeHtml(chosen.address)}${chosen.addressSource==='approx'?'（附近推估）':''}</div><a href="${safeMapUrl(chosen)}" target="_blank" rel="noopener noreferrer">📍 開啟 Google 地圖導航 ↗</a>`;
       }
       $('wheelResult').classList.add('show');state.spinning=false;updateWheelAfterSpin();
     }
@@ -546,6 +672,55 @@
       state.cat=cat;document.querySelectorAll('[data-cat]').forEach(btn=>{const selected=btn.dataset.cat===cat;btn.classList.toggle('active',selected);btn.setAttribute('aria-pressed',String(selected));});
       if(state.fetched)applyFilters();
     }
+    async function lookupShopAddress(id) {
+      if(state.addressLookupBusy) {toast('正在查詢上一筆附近地址，請稍後。');return;}
+      const place=state.all.find(p=>p.id===id);
+      if(!place||place.addressSource!=='none')return;
+      state.addressLookupBusy=true;place.addressBusy=true;renderResults();
+      try {
+        const cacheKey=`${place.lat.toFixed(5)},${place.lon.toFixed(5)}`;
+        let nearby=state.reverseCache.get(cacheKey);
+        if(!nearby) {
+          const features=await photonGet('reverse',{lat:place.lat,lon:place.lon,limit:1,lang:'zh'});
+          nearby=photonDescription(features[0])||'';
+          if(nearby)state.reverseCache.set(cacheKey,nearby);
+        }
+        if(nearby) {place.address=nearby;place.addressSource='approx';toast('已取得附近推估地址；請以導航確認店家正確門牌。');}
+        else toast('地址服務未提供附近地址，可點擊「開啟導航」查看位置。');
+      } catch(err) {toast('附近地址反查失敗，請使用導航查看店家位置。');}
+      finally {place.addressBusy=false;state.addressLookupBusy=false;renderResults();}
+    }
+    function renderAddressChoices(choices) {
+      const box=$('addressResults');box.innerHTML='';
+      state.locationChoices=choices;
+      if(!choices.length) {box.textContent='查無相符地點，試著輸入更明確的縣市或地標。';return;}
+      const label=document.createElement('div');label.className='tiny';label.textContent='請點選正確的位置作為搜尋中心：';box.appendChild(label);
+      for(let i=0;i<choices.length;i++) {
+        const f=choices[i],props=f.properties||{};
+        const button=document.createElement('button');button.type='button';button.className='lookup-choice';button.dataset.choice=String(i);
+        button.textContent=`📍 ${props.name||'位置 '+(i+1)} · ${photonDescription(f)||'可查看地圖座標'}`;
+        box.appendChild(button);
+      }
+    }
+    async function searchAddress() {
+      const query=$('addressInput').value.trim();
+      if(query.length<2){toast('請輸入至少 2 個字的地址或地標。');return;}
+      $('addressSearchBtn').disabled=true;
+      $('addressResults').textContent='正在搜尋地址／地標…';
+      $('manualDetails').open=true;
+      try {const choices=await photonGet('api',{q:query,limit:5,lang:'zh'});renderAddressChoices(choices);}
+      catch(err){$('addressResults').textContent='地址搜尋服務暫時無法連線；可以改用下方預設位置或輸入座標。';}
+      finally {$('addressSearchBtn').disabled=false;}
+    }
+    $('addressSearchBtn').addEventListener('click',searchAddress);
+    $('addressInput').addEventListener('keydown',(event)=>{if(event.key==='Enter'){event.preventDefault();searchAddress();}});
+    $('addressResults').addEventListener('click',async(event)=>{
+      const btn=event.target.closest('[data-choice]');if(!btn)return;
+      const feature=state.locationChoices[Number(btn.dataset.choice)];
+      const [lon,lat]=feature?.geometry?.coordinates||[];
+      const label=feature?.properties?.name||'手動地址';
+      if(setOrigin(Number(lat),Number(lon),`指定地點：${label}`)) { $('addressResults').innerHTML=''; await searchNearby(); }
+    });
     $('locateBtn').addEventListener('click',useGPS);
     $('searchBtn').addEventListener('click',searchNearby);
     $('manualBtn').addEventListener('click',async()=>{
@@ -562,6 +737,7 @@
     $('openOnly').addEventListener('change',()=>{if(state.fetched)applyFilters();});
     $('sortSelect').addEventListener('change',(e)=>{state.sort=e.target.value;if(state.fetched)applyFilters();});
     $('placeList').addEventListener('click',(e)=>{
+      const addr=e.target.closest('[data-addr]');if(addr){void lookupShopAddress(addr.dataset.addr);return;}
       const btn=e.target.closest('[data-pick]');if(!btn||state.spinning)return;
       const id=btn.dataset.pick;if(state.selections.has(id))state.selections.delete(id);else state.selections.add(id);
       renderResults();updateWheel();
@@ -570,6 +746,11 @@
     $('spinBtn').addEventListener('click',spinWheel);
     $('clearPicksBtn').addEventListener('click',()=>{if(state.spinning)return;state.selections.clear();renderResults();updateWheel();toast('已清除指定候選，轉盤將從全部符合條件的店家抽選。');});
     window.addEventListener('resize',()=>{ /* canvas 以 CSS 等比縮放，不需重繪 */ });
+    if(location.protocol==='file:') {
+      $('gpsHelp').textContent='你目前是直接開啟 HTML 檔案：不同瀏覽器對本機定位與外部查詢支援不一。建議上傳 GitHub Pages 後用 HTTPS 開啟。';
+    } else if(window.self!==window.top) {
+      $('gpsHelp').textContent='目前網頁似乎在內嵌預覽框中，定位權限可能受阻；請用瀏覽器新分頁開啟正式 HTTPS 網址。';
+    }
     updateRadius(1000);updateCategory('全部');updateWheel();
   </script>
 </body>
